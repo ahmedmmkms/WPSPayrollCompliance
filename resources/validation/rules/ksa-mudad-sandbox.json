@@ -1,0 +1,108 @@
+{
+  "id": "ksa-mudad-sandbox",
+  "version": "1.0.0",
+  "name": {
+    "en": "KSA Mudad Sandbox",
+    "ar": "بيئة مٌدد التجريبية - السعودية"
+  },
+  "description": {
+    "en": "Validation rules aligning with Mudad sandbox payroll checks.",
+    "ar": "قواعد التحقق المطابقة لفحوص كشوف الرواتب في بيئة مٌدد التجريبية."
+  },
+  "metadata": {
+    "authority": "Mudad",
+    "profile": "mudad",
+    "country": "ksa"
+  },
+  "rules": [
+    {
+      "id": "ksa-mudad-basic-id",
+      "type": "required",
+      "target": "employee",
+      "field": "external_id",
+      "severity": "error",
+      "message": {
+        "en": "Employee external ID is required for KSA Mudad exports.",
+        "ar": "معرّف الموظف الخارجي مطلوب في ملفات مٌدد السعودية."
+      },
+      "tags": ["identity", "mudad"]
+    },
+    {
+      "id": "ksa-mudad-national-id",
+      "type": "regex",
+      "target": "employee",
+      "field": "metadata.mudad.national_id",
+      "severity": "error",
+      "pattern": "^\\d{10}$",
+      "message": {
+        "en": "Mudad requires a 10-digit national ID for every employee.",
+        "ar": "تتطلب مٌدد رقم هوية وطنية مكوّناً من 10 أرقام لكل موظف."
+      },
+      "tags": ["identity", "mudad"]
+    },
+    {
+      "id": "ksa-mudad-contract-type",
+      "type": "enum",
+      "target": "employee",
+      "field": "metadata.mudad.contract_type",
+      "severity": "error",
+      "allowed": ["full_time", "part_time", "temporary"],
+      "message": {
+        "en": "Contract type must be one of the supported Mudad values.",
+        "ar": "يجب أن يكون نوع العقد ضمن القيم المدعومة من مٌدد."
+      },
+      "tags": ["employment", "mudad"]
+    },
+    {
+      "id": "ksa-mudad-salary-minimum",
+      "type": "numeric_min",
+      "target": "employee",
+      "field": "salary",
+      "severity": "error",
+      "value": 0,
+      "message": {
+        "en": "Salary must be zero or greater for every employee in KSA submissions.",
+        "ar": "يجب أن يكون الراتب صفراً أو أعلى لكل موظف في ملفات السعودية."
+      },
+      "tags": ["salary", "mudad"]
+    },
+    {
+      "id": "ksa-mudad-currency",
+      "type": "enum",
+      "target": "employee",
+      "field": "currency",
+      "severity": "error",
+      "allowed": ["SAR"],
+      "message": {
+        "en": "Currency must be SAR for KSA Mudad exports.",
+        "ar": "يجب أن تكون العملة ريال سعودي (SAR) في ملفات مٌدد السعودية."
+      },
+      "tags": ["currency", "mudad"]
+    },
+    {
+      "id": "ksa-mudad-iban-format",
+      "type": "regex",
+      "target": "employee",
+      "field": "metadata.mudad.bank_iban",
+      "severity": "error",
+      "pattern": "^SA\\d{22}$",
+      "message": {
+        "en": "IBAN must start with SA and include 22 digits for Mudad payroll files.",
+        "ar": "يجب أن يبدأ رقم الآيبان بـ SA ويتضمن 22 رقماً في ملفات كشوف مٌدد."
+      },
+      "tags": ["banking", "mudad"]
+    },
+    {
+      "id": "ksa-mudad-portal-reference",
+      "type": "required",
+      "target": "batch",
+      "field": "metadata.mudad.portal_reference",
+      "severity": "error",
+      "message": {
+        "en": "A Mudad portal reference is required on the payroll batch.",
+        "ar": "مرجع بوابة مٌدد مطلوب في دفعة الرواتب."
+      },
+      "tags": ["batch", "mudad"]
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment target"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: "Release tag or commit SHA"
+        required: true
+        default: "latest"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 20
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Display deployment context
+        run: |
+          echo "Deploying version: ${{ inputs.version }}"
+          echo "Target environment: ${{ inputs.environment }}"
+
+      - name: Trigger Render deploy hook
+        id: trigger
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK secret not configured." >&2
+            exit 1
+          fi
+          curl --fail --silent --show-error -X POST "$RENDER_DEPLOY_HOOK"
+
+      - name: Poll Render deployment status
+        if: steps.trigger.outcome == 'success'
+        env:
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          if [ -z "$RENDER_SERVICE_ID" ] || [ -z "$RENDER_API_KEY" ]; then
+            echo "Render API credentials not configured (RENDER_SERVICE_ID and RENDER_API_KEY)." >&2
+            exit 1
+          fi
+
+          STATUS="pending"
+          ATTEMPT=0
+          MAX_ATTEMPTS=20
+          SLEEP_SECONDS=15
+
+          while [ "$STATUS" != "live" ] && [ "$STATUS" != "failed" ] && [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT+1))
+            echo "Polling Render deployment status (attempt ${ATTEMPT}/${MAX_ATTEMPTS})..."
+            RESPONSE=$(curl --silent --show-error \
+              -H "Authorization: Bearer $RENDER_API_KEY" \
+              -H "Accept: application/json" \
+              "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys?limit=1")
+
+            STATUS=$(echo "$RESPONSE" | jq -r '.deploys[0].status // "unknown"')
+            ID=$(echo "$RESPONSE" | jq -r '.deploys[0].id // ""')
+            CREATED=$(echo "$RESPONSE" | jq -r '.deploys[0].createdAt // ""')
+
+            echo "Latest deploy $ID status: $STATUS (created $CREATED)"
+
+            if [ "$STATUS" = "live" ]; then
+              echo "Render deployment succeeded."
+              exit 0
+            fi
+
+            if [ "$STATUS" = "failed" ] || [ "$STATUS" = "canceled" ]; then
+              echo "Render deployment reported status '$STATUS'." >&2
+              echo "$RESPONSE"
+              exit 1
+            fi
+
+            sleep $SLEEP_SECONDS
+          done
+
+          echo "Render deployment did not reach 'live' state after $MAX_ATTEMPTS attempts." >&2
+          exit 1
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          echo "Deployment failed. Review previous logs for details." >&2

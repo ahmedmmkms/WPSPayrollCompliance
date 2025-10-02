@@ -1,0 +1,93 @@
+# Prometheus alert rules for Laravel Horizon queues (S3-PERF-20)
+# Metrics are exported via the planned Horizon Prometheus exporter (see docs/dpia-checklist.md for compliance context).
+
+groups:
+  - name: wps-horizon-backlog
+    rules:
+      - alert: ImportQueueBacklog
+        expr: sum(lh_queue_pending{queue="imports", environment="production"}) > 25
+        for: 10m
+        labels:
+          severity: warning
+          service: horizon
+          team: ops
+        annotations:
+          summary: "Importer queue backlog over 25 jobs"
+          description: |
+            More than 25 importer jobs have been pending for over 10 minutes. Review Horizon dashboard and
+            consider scaling the `imports-supervisor` workers (config/horizon.php).
+
+      - alert: ValidationQueueBacklog
+        expr: sum(lh_queue_pending{queue="validation", environment="production"}) > 15
+        for: 10m
+        labels:
+          severity: warning
+          service: horizon
+          team: ops
+        annotations:
+          summary: "Validation queue backlog over threshold"
+          description: |
+            Validation queue backlog exceeds 15 jobs for 10 minutes. Validation SLAs may be at risk;
+            inspect rule performance or scale workers.
+
+  - name: wps-horizon-latency
+    rules:
+      - alert: ValidationJobLatencySLO
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(lh_job_duration_seconds_bucket{queue="validation", environment="production"}[5m])) by (le)
+          ) > 120
+        for: 5m
+        labels:
+          severity: critical
+          service: horizon
+          team: ops
+        annotations:
+          summary: "Validation job P95 latency breached 120 seconds"
+          description: |
+            The 95th percentile validation job runtime exceeded 120 seconds for 5 minutes.
+            Investigate recent deployment changes or throttled downstream integrations.
+
+      - alert: ImportJobFailureRatio
+        expr: |
+          (increase(lh_jobs_failed_total{queue="imports", environment="production"}[15m])
+           /
+           clamp_min(increase(lh_jobs_processed_total{queue="imports", environment="production"}[15m]), 1)) > 0.05
+        for: 15m
+        labels:
+          severity: critical
+          service: horizon
+          team: ops
+        annotations:
+          summary: "Importer job failure ratio above 5%"
+          description: |
+            More than 5% of importer jobs failed in the last 15 minutes.
+            Review logs for CSV validation errors or tenant connectivity issues.
+
+  - name: wps-horizon-health
+    rules:
+      - alert: HorizonSupervisorsMissing
+        expr: count(lh_supervisors_up{environment="production"}) < 2
+        for: 5m
+        labels:
+          severity: critical
+          service: horizon
+          team: ops
+        annotations:
+          summary: "Less than 2 Horizon supervisors reporting"
+          description: |
+            Horizon supervisors dropped below redundancy requirements.
+            Confirm the Alwaysdata worker process is running and restart if necessary.
+
+      - alert: AuditPruneFailures
+        expr: increase(app_audit_prune_failures_total[30m]) > 0
+        for: 30m
+        labels:
+          severity: warning
+          service: artisan
+          team: ops
+        annotations:
+          summary: "Audit prune command failures detected"
+          description: |
+            The scheduled `audit:prune` command reported failures within the last 30 minutes.
+            Run `php artisan audit:prune --dry-run` manually to investigate tenant metadata.

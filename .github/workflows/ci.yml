@@ -1,0 +1,193 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+
+jobs:
+  test:
+    if: ${{ hashFiles('composer.json') != '' }}
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wps_payroll_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v3
+        with:
+          php-version: '8.3'
+          extensions: intl, mbstring, pdo_mysql, bcmath
+          coverage: xdebug
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run test suite
+        run: |
+          if composer show pestphp/pest > /dev/null 2>&1; then
+            vendor/bin/pest --ci
+          elif [ -f vendor/bin/phpunit ]; then
+            vendor/bin/phpunit
+          else
+            echo "No PHP test runner detected. Skipping."
+          fi
+
+      - name: Upload coverage (artifact)
+        if: always() && (hashFiles('storage/logs/junit.xml') != '' || hashFiles('coverage/coverage.xml') != '')
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-test-artifacts
+          path: |
+            storage/logs/junit.xml
+            coverage/
+
+  docker-build:
+    name: Docker Build Validation
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+      - name: Build container image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: false
+          tags: wps-payroll-compliance:ci
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+      - name: Move new cache
+        if: always()
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  lighthouse:
+    name: Lighthouse (EN/AR)
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v3
+        with:
+          php-version: '8.3'
+          extensions: intl, mbstring, pdo_sqlite, sqlite3
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-lhci-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-lhci-
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache npm modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Create LHCI environment file
+        run: |
+          APP_KEY=$(php -r "echo 'base64:'.base64_encode(random_bytes(32));")
+          cat <<ENV > .env
+APP_NAME="WPS Payroll Compliance"
+APP_ENV=lhci
+APP_KEY="$APP_KEY"
+APP_DEBUG=false
+APP_URL=http://127.0.0.1:8000
+LOG_CHANNEL=stack
+LOG_LEVEL=warning
+DB_CONNECTION=sqlite
+DB_DATABASE=:memory:
+CACHE_DRIVER=array
+SESSION_DRIVER=array
+QUEUE_CONNECTION=sync
+BROADCAST_DRIVER=log
+FILESYSTEM_DISK=local
+ENV
+
+      - name: Start Laravel HTTP server
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 >/tmp/lhci-serve.log 2>&1 &
+          echo $! > /tmp/lhci-serve.pid
+          sleep 5
+
+      - name: Run Lighthouse CI (EN/AR)
+        env:
+          LHCI_BUILD_CONTEXT__CURRENT_HASH: ${{ github.sha }}
+        run: npm run lighthouse
+
+      - name: Upload Lighthouse artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: .lighthouseci/
+
+      - name: Stop Laravel HTTP server
+        if: always()
+        run: |
+          if [ -f /tmp/lhci-serve.pid ]; then
+            kill $(cat /tmp/lhci-serve.pid) || true
+          fi

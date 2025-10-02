@@ -1,0 +1,278 @@
+/* Custom theme styles */
+.filament,
+.filament-sidebar,
+.filament-header,
+.filament-main,
+.filament-page {
+    transition: background-color, border-color, color;
+    transition-duration: 200ms;
+}
+
+.filament-main {
+    border-radius: 0.5rem; /* equivalent to rounded-lg */
+    overflow: hidden;
+}
+
+.filament-page {
+    background-color: #f8fafc;
+}
+
+.dark .filament-page {
+    background-color: #0b1220;
+}
+
+.filament-card {
+    border-radius: 0.5rem; /* equivalent to rounded-lg */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* equivalent to shadow-sm */
+    border: 1px solid #e5e7eb; /* equivalent to border-gray-200 */
+}
+
+.dark .filament-card {
+    border-color: #374151; /* equivalent to border-gray-700 */
+}
+
+/* RTL support for Arabic */
+[dir="rtl"] {
+    .filament-sidebar {
+        border-right: none;
+        border-left: 1px solid #e5e7eb; /* equivalent to border-gray-200 */
+    }
+    
+    .filament-sidebar-open {
+        right: auto;
+        left: 0;
+    }
+}
+
+.dark [dir="rtl"] .filament-sidebar {
+    border-left-color: #374151; /* equivalent to border-gray-700 */
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.625rem; /* equivalent to px-2.5 py-0.5 */
+    border-radius: 9999px; /* equivalent to rounded-full */
+    font-size: 0.75rem; /* equivalent to text-xs */
+    font-weight: 500; /* equivalent to font-medium */
+}
+
+.status-badge-processing {
+    background-color: #fef3c7; /* equivalent to bg-warning-100 */
+    color: #92400e; /* equivalent to text-warning-800 */
+}
+
+.dark .status-badge-processing {
+    background-color: #fde68a; /* equivalent to bg-warning-200 */
+    color: #78350f; /* equivalent to text-warning-900 */
+}
+
+.status-badge-completed {
+    background-color: #dcfce7; /* equivalent to bg-success-100 */
+    color: #166534; /* equivalent to text-success-800 */
+}
+
+.dark .status-badge-completed {
+    background-color: #bbf7d0; /* equivalent to bg-success-200 */
+    color: #14532d; /* equivalent to text-success-900 */
+}
+
+.status-badge-failed {
+    background-color: #fee2e2; /* equivalent to bg-danger-100 */
+    color: #991b1b; /* equivalent to text-danger-800 */
+}
+
+.dark .status-badge-failed {
+    background-color: #fecaca; /* equivalent to bg-danger-200 */
+    color: #7f1d1d; /* equivalent to text-danger-900 */
+}
+
+.status-badge-pending {
+    background-color: #dbeafe; /* equivalent to bg-info-100 */
+    color: #1e40af; /* equivalent to text-info-800 */
+}
+
+.dark .status-badge-pending {
+    background-color: #a5f3fc; /* equivalent to bg-info-200 */
+    color: #0891b2; /* equivalent to text-info-900 */
+}
+
+/* Table enhancements */
+.filament-tables-table {
+    border-radius: 0.25rem; /* equivalent to rounded */
+    overflow: hidden;
+}
+
+.filament-tables-header {
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e5e7eb; /* equivalent to border-gray-200 */
+}
+
+.dark .filament-tables-header {
+    background-color: #0b1220;
+    border-color: #374151; /* equivalent to border-gray-700 */
+}
+
+.filament-tables-row {
+    transition: background-color;
+    transition-duration: 150ms;
+}
+
+.filament-tables-row:hover {
+    background-color: #f9fafb; /* equivalent to bg-gray-50 */
+}
+
+.dark .filament-tables-row:hover {
+    background-color: rgba(31, 41, 55, 0.5); /* equivalent to bg-gray-800/50 */
+}
+
+.filament-tables-cell {
+    padding-top: 0.75rem; /* equivalent to py-3 */
+    padding-bottom: 0.75rem; /* equivalent to py-3 */
+    padding-left: 1rem; /* equivalent to px-4 */
+    padding-right: 1rem; /* equivalent to px-4 */
+    vertical-align: middle; /* equivalent to align-middle */
+}
+
+/* Dense table mode */
+.table-dense .filament-tables-cell {
+    padding-top: 0.5rem; /* equivalent to py-2 */
+    padding-bottom: 0.5rem; /* equivalent to py-2 */
+}
+
+/* RTL overrides */
+[dir="rtl"] .filament-tables-header-cell,
+[dir="rtl"] .filament-tables-cell {
+    text-align: right; /* equivalent to text-right */
+}
+
+/* Widget cards */
+.filament-widgets-container .filament-widget {
+    border-radius: 0.5rem; /* equivalent to rounded-lg */
+    border: 1px solid #e5e7eb; /* equivalent to border-gray-200 */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* equivalent to shadow-sm */
+}
+
+.dark .filament-widgets-container .filament-widget {
+    border-color: #374151; /* equivalent to border-gray-700 */
+}
+
+/* KPI Card styles */
+.kpi-card {
+    background-color: #ffffff; /* equivalent to bg-white */
+    border-radius: 0.25rem; /* equivalent to rounded */
+    padding: 1.5rem; /* equivalent to p-6 */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* equivalent to shadow-sm */
+    border: 1px solid #e5e7eb; /* equivalent to border-gray-200 */
+}
+
+.dark .kpi-card {
+    background-color: #1f2937; /* equivalent to bg-gray-800 */
+    border-color: #374151; /* equivalent to border-gray-700 */
+}
+
+.kpi-card .value {
+    font-size: 1.5rem; /* equivalent to text-2xl */
+    font-weight: bold; /* equivalent to font-bold */
+    color: #111827; /* equivalent to text-ink */
+}
+
+.dark .kpi-card .value {
+    color: #f9fafb; /* equivalent to dark:text-dark-ink */
+}
+
+.kpi-card .label {
+    font-size: 0.875rem; /* equivalent to text-sm */
+    color: #6b7280; /* equivalent to text-muted-ink */
+    margin-top: 0.25rem; /* equivalent to mt-1 */
+}
+
+.dark .kpi-card .label {
+    color: #9ca3af; /* equivalent to dark:text-gray-400 */
+}
+
+.kpi-card .trend {
+    font-size: 0.75rem; /* equivalent to text-xs */
+    margin-top: 0.5rem; /* equivalent to mt-2 */
+    display: flex;
+    align-items: center;
+    gap: 0.25rem; /* equivalent to gap-1 */
+}
+
+.trend-up {
+    color: #16a34a; /* equivalent to text-success-600 */
+}
+
+.dark .trend-up {
+    color: #34d399; /* equivalent to dark:text-success-400 */
+}
+
+.trend-down {
+    color: #dc2626; /* equivalent to text-danger-600 */
+}
+
+.dark .trend-down {
+    color: #f87171; /* equivalent to dark:text-danger-400 */
+}
+
+/* Import wizard styles */
+.import-step {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* equivalent to space-y-4 */
+}
+
+.import-step .step-title {
+    font-size: 1.25rem; /* equivalent to text-xl */
+    font-weight: 600; /* equivalent to font-semibold */
+    color: #111827; /* equivalent to text-ink */
+    margin-bottom: 1rem; /* equivalent to mb-4 */
+}
+
+.dark .import-step .step-title {
+    color: #f9fafb; /* equivalent to dark:text-dark-ink */
+}
+
+.import-step .step-content {
+    background-color: #ffffff; /* equivalent to bg-white */
+    border-radius: 0.5rem; /* equivalent to rounded */
+    padding: 1.5rem; /* equivalent to p-6 */
+    border: 1px solid #e5e7eb; /* equivalent to border-gray-200 */
+}
+
+.dark .import-step .step-content {
+    background-color: #1f2937; /* equivalent to dark:bg-gray-800 */
+    border-color: #374151; /* equivalent to dark:border-gray-700 */
+}
+
+.import-step .step-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem; /* equivalent to gap-3 */
+    margin-top: 1.5rem; /* equivalent to mt-6 */
+}
+
+/* Dark mode enhancements */
+.dark {
+    --tw-bg-opacity: 1;
+    background-color: rgb(11 18 32 / var(--tw-bg-opacity));
+}
+
+/* Custom scrollbar */
+.filament-sidebar [data-simplebar]::-webkit-scrollbar,
+.filament-main [data-simplebar]::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.filament-sidebar [data-simplebar]::-webkit-scrollbar-thumb,
+.filament-main [data-simplebar]::-webkit-scrollbar-thumb {
+    background-color: #d1d5db; /* equivalent to bg-gray-300 */
+    border-radius: 9999px; /* equivalent to rounded-full */
+}
+
+.dark .filament-sidebar [data-simplebar]::-webkit-scrollbar-thumb,
+.dark .filament-main [data-simplebar]::-webkit-scrollbar-thumb {
+    background-color: #4b5563; /* equivalent to dark:bg-gray-600 */
+}

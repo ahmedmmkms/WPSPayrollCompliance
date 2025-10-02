@@ -1,0 +1,70 @@
+{
+  "id": "uae-wps-v1",
+  "version": "1.0.0",
+  "name": {
+    "en": "UAE WPS Baseline",
+    "ar": "الأساس لنظام حماية الأجور في الإمارات"
+  },
+  "description": {
+    "en": "Baseline payroll compliance checks mandated by the UAE WPS SIF v1.0 specification.",
+    "ar": "فحوص الامتثال الأساسية للرواتب وفقاً لمتطلبات مواصفات ملف حماية الأجور في الإمارات الإصدار 1.0."
+  },
+  "metadata": {
+    "authority": "MOHRE",
+    "profile": "wps",
+    "country": "uae"
+  },
+  "rules": [
+    {
+      "id": "uae-wps-salary-minimum",
+      "type": "numeric_min",
+      "target": "employee",
+      "field": "salary",
+      "severity": "error",
+      "value": 0,
+      "message": {
+        "en": "Salary must be zero or greater for every employee.",
+        "ar": "يجب أن يكون الراتب صفراً أو أعلى لكل موظف."
+      },
+      "tags": ["salary", "wps"]
+    },
+    {
+      "id": "uae-wps-currency",
+      "type": "enum",
+      "target": "employee",
+      "field": "currency",
+      "severity": "error",
+      "allowed": ["AED"],
+      "message": {
+        "en": "Currency must be AED for UAE WPS exports.",
+        "ar": "يجب أن تكون العملة درهم إماراتي (AED) في ملفات حماية الأجور الإماراتية."
+      },
+      "tags": ["currency", "wps"]
+    },
+    {
+      "id": "uae-wps-batch-reference",
+      "type": "required",
+      "target": "batch",
+      "field": "reference",
+      "severity": "error",
+      "message": {
+        "en": "Batch reference is required for UAE WPS exports.",
+        "ar": "مرجع الدفعة مطلوب في ملفات حماية الأجور الإماراتية."
+      },
+      "tags": ["batch", "metadata"]
+    },
+    {
+      "id": "uae-wps-employee-count",
+      "type": "numeric_min",
+      "target": "batch",
+      "field": "employee_count",
+      "severity": "error",
+      "value": 1,
+      "message": {
+        "en": "At least one employee must be included in the payroll batch.",
+        "ar": "يجب تضمين موظف واحد على الأقل في دفعة الرواتب."
+      },
+      "tags": ["batch", "employees"]
+    }
+  ]
+}

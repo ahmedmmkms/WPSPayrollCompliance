@@ -1,0 +1,4 @@
+{
+  "outputDirectory": "vercel",
+  "buildCommand": "echo Static site for Vercel"
+}

@@ -1,0 +1,33 @@
+{
+  "key": "ksa-mudad-sandbox-v1",
+  "version": "1.0.0",
+  "labels": {
+    "en": "KSA Mudad Sandbox",
+    "ar": "قالب مٌدد التجريبي - السعودية"
+  },
+  "metadata": {
+    "bank_code": "MUDAD",
+    "country": "ksa",
+    "adapter": "mudad"
+  },
+  "filename": "{{batch.reference}}-ksa-mudad-{{template.version}}.sif",
+  "delimiter": "|",
+  "structure": {
+    "header": [
+      "HDR",
+      "{{batch.reference}}",
+      "{{batch.metadata.mudad.portal_reference}}",
+      "{{batch.scheduled_for|date:Y-m-d}}",
+      "{{batch.employee_count}}"
+    ],
+    "detail": [
+      "ROW",
+      "{{employee.external_id}}",
+      "{{employee.metadata.mudad.national_id}}",
+      "{{employee.metadata.mudad.contract_type|upper}}",
+      "{{employee.salary|number_format:2}}",
+      "{{employee.currency|upper}}",
+      "{{employee.metadata.mudad.bank_iban|upper}}"
+    ]
+  }
+}

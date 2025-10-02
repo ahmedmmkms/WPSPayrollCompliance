@@ -1,0 +1,57 @@
+name: Static Analysis
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+
+jobs:
+  lint:
+    if: ${{ hashFiles('composer.json') != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v3
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run PHPStan (if configured)
+        run: |
+          if [ -f phpstan.neon ] || [ -f phpstan.neon.dist ]; then
+            vendor/bin/phpstan analyse --no-interaction
+          else
+            echo "phpstan.neon not found. Skipping PHPStan."
+          fi
+
+      - name: Run Psalm (if configured)
+        run: |
+          if [ -f psalm.xml ] || [ -f psalm.xml.dist ]; then
+            vendor/bin/psalm
+          else
+            echo "psalm.xml not found. Skipping Psalm."
+          fi
+
+      - name: Run Pint (optional)
+        run: |
+          if composer show laravel/pint > /dev/null 2>&1; then
+            vendor/bin/pint --test
+          else
+            echo "laravel/pint not installed. Skipping style check."
+          fi

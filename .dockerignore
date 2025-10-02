@@ -1,0 +1,13 @@
+.git
+.gitignore
+.github
+Dockerfile
+.dockerignore
+docker-compose.yml
+node_modules
+vendor
+storage
+docs
+plan.md
+*.md
+.env

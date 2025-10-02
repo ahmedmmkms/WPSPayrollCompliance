@@ -1,0 +1,28 @@
+{
+  "key": "uae-wps-standard-v1",
+  "version": "1.0.0",
+  "labels": {
+    "en": "UAE WPS Standard",
+    "ar": "القالب القياسي لنظام حماية الأجور في الإمارات"
+  },
+  "metadata": {
+    "bank_code": "WPSSTD",
+    "country": "uae"
+  },
+  "filename": "{{batch.reference}}-uae-wps-{{template.version}}.sif",
+  "delimiter": "|",
+  "structure": {
+    "header": [
+      "HDR",
+      "{{batch.reference}}",
+      "{{batch.scheduled_for|date:Y-m-d}}",
+      "{{batch.employee_count}}"
+    ],
+    "detail": [
+      "DTL",
+      "{{employee.external_id}}",
+      "{{employee.salary|number_format:2}}",
+      "{{employee.currency|upper}}"
+    ]
+  }
+}

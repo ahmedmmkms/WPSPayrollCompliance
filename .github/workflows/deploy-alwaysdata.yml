@@ -1,0 +1,310 @@
+name: Deploy (Alwaysdata)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    timeout-minutes: 20
+    concurrency:
+      group: deploy-alwaysdata
+      cancel-in-progress: true
+    env:
+      DEPLOY_PATH: ~/www/wps-payroll
+      RELEASE_NAME: release-18190483888
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP for build
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: intl, mbstring, bcmath, pdo_mysql
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Validate deployment secrets
+        env:
+          ALWAYSDATA_API_TOKEN: ${{ secrets.ALWAYSDATA_API_TOKEN }}
+          ALWAYSDATA_SSH_HOST: ${{ secrets.ALWAYSDATA_SSH_HOST }}
+          ALWAYSDATA_SSH_USER: ${{ secrets.ALWAYSDATA_SSH_USER }}
+          ALWAYSDATA_SSH_KEY: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+        run: |
+          for var in ALWAYSDATA_API_TOKEN ALWAYSDATA_SSH_HOST ALWAYSDATA_SSH_USER ALWAYSDATA_SSH_KEY; do
+            if [ -z "${!var}" ]; then
+              echo "Missing $var secret." >&2
+              exit 1
+            fi
+          done
+
+      - name: Verify Alwaysdata API token
+        env:
+          ALWAYSDATA_API_TOKEN: ${{ secrets.ALWAYSDATA_API_TOKEN }}
+          ALWAYSDATA_SSH_USER: ${{ secrets.ALWAYSDATA_SSH_USER }}
+        run: |
+          ACCOUNT="${ALWAYSDATA_SSH_USER%%-*}"
+          if [ -z "$ACCOUNT" ]; then
+            ACCOUNT="$ALWAYSDATA_SSH_USER"
+          fi
+
+          RESPONSE_FILE=$(mktemp)
+          STATUS=$(curl --silent --show-error --write-out "%{http_code}" \
+            -u "$ACCOUNT:$ALWAYSDATA_API_TOKEN" \
+            https://api.alwaysdata.com/v1/site/ \
+            --output "$RESPONSE_FILE")
+
+          if [ "$STATUS" = "200" ]; then
+            echo "Alwaysdata API credentials verified."
+          else
+            echo "::warning::Alwaysdata API token validation returned HTTP $STATUS" >&2
+            cat "$RESPONSE_FILE"
+          fi
+
+          rm -f "$RESPONSE_FILE"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Prepare SSH key
+        env:
+          ALWAYSDATA_SSH_KEY: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          KEY_FILE=~/.ssh/alwaysdata_key
+          printf '%s\n' "$ALWAYSDATA_SSH_KEY" | tr -d '\r' > "$KEY_FILE"
+          chmod 600 "$KEY_FILE"
+          echo "ALWAYSDATA_KEY_PATH=$KEY_FILE" >> "$GITHUB_ENV"
+
+      - name: Add Alwaysdata host key
+        env:
+          ALWAYSDATA_SSH_HOST: ${{ secrets.ALWAYSDATA_SSH_HOST }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$ALWAYSDATA_SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Ensure remote directories
+        env:
+          ALWAYSDATA_SSH_HOST: ${{ secrets.ALWAYSDATA_SSH_HOST }}
+          ALWAYSDATA_SSH_USER: ${{ secrets.ALWAYSDATA_SSH_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i "$ALWAYSDATA_KEY_PATH" -o StrictHostKeyChecking=no -o IdentitiesOnly=yes "$ALWAYSDATA_SSH_USER@$ALWAYSDATA_SSH_HOST" "DEPLOY_PATH='$DEPLOY_PATH' RELEASE_NAME='$RELEASE_NAME' bash -s" <<'EOF'
+            set -euo pipefail
+            if [ -f ~/.profile ]; then
+              source ~/.profile >/dev/null 2>&1 || true
+            fi
+            DEPLOY_DIR="$DEPLOY_PATH"
+            if [ "${DEPLOY_DIR#\~}" != "$DEPLOY_DIR" ]; then
+              DEPLOY_DIR="$HOME${DEPLOY_DIR#\~}"
+            fi
+            RELEASES_DIR="$DEPLOY_DIR/releases"
+            SHARED_DIR="$DEPLOY_DIR/shared"
+            RELEASE_DIR="$RELEASES_DIR/$RELEASE_NAME"
+
+            mkdir -p "$RELEASES_DIR" "$SHARED_DIR" "$RELEASE_DIR"
+            mkdir -p \
+              "$SHARED_DIR/storage" \
+              "$SHARED_DIR/storage/app" \
+              "$SHARED_DIR/storage/framework/cache" \
+              "$SHARED_DIR/storage/framework/sessions" \
+              "$SHARED_DIR/storage/framework/testing" \
+              "$SHARED_DIR/storage/framework/views" \
+              "$SHARED_DIR/storage/logs"
+          EOF
+
+      - name: Sync application to Alwaysdata
+        env:
+          ALWAYSDATA_SSH_HOST: ${{ secrets.ALWAYSDATA_SSH_HOST }}
+          ALWAYSDATA_SSH_USER: ${{ secrets.ALWAYSDATA_SSH_USER }}
+        run: |
+          set -euo pipefail
+          rsync -az --delete \
+            --exclude='.git/' \
+            --exclude='node_modules/' \
+            --exclude='storage/' \
+            --exclude='vendor/.git/' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            -e "ssh -i \"$ALWAYSDATA_KEY_PATH\" -o StrictHostKeyChecking=no -o IdentitiesOnly=yes" \
+            ./ "$ALWAYSDATA_SSH_USER@$ALWAYSDATA_SSH_HOST:$DEPLOY_PATH/releases/$RELEASE_NAME"
+
+      - name: Run post-deployment tasks
+        env:
+          ALWAYSDATA_SSH_HOST: ${{ secrets.ALWAYSDATA_SSH_HOST }}
+          ALWAYSDATA_SSH_USER: ${{ secrets.ALWAYSDATA_SSH_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i "$ALWAYSDATA_KEY_PATH" -o StrictHostKeyChecking=no -o IdentitiesOnly=yes "$ALWAYSDATA_SSH_USER@$ALWAYSDATA_SSH_HOST" "DEPLOY_PATH='$DEPLOY_PATH' RELEASE_NAME='$RELEASE_NAME' bash -s" <<'EOF'
+            set -euo pipefail
+            set -x
+            if [ -f ~/.profile ]; then
+              source ~/.profile >/dev/null 2>&1 || true
+            fi
+            DEPLOY_DIR="$DEPLOY_PATH"
+            if [ "${DEPLOY_DIR#\~}" != "$DEPLOY_DIR" ]; then
+              DEPLOY_DIR="$HOME${DEPLOY_DIR#\~}"
+            fi
+            RELEASES_DIR="$DEPLOY_DIR/releases"
+            SHARED_DIR="$DEPLOY_DIR/shared"
+            RELEASE_DIR="$RELEASES_DIR/$RELEASE_NAME"
+            CURRENT_LINK="$DEPLOY_DIR/current"
+            
+            # This deployment strategy overwrites the existing release in place
+            # instead of creating new release directories
+
+            mkdir -p "$RELEASE_DIR"
+            cd "$RELEASE_DIR"
+            ln -sfn "$SHARED_DIR/storage" storage
+            export COMPOSER_ALLOW_SUPERUSER=1
+            unset PHP_INI_SCAN_DIR PHPRC
+
+            CONFIG_VERSION="8.3"
+            USER_PHP_DIR="$HOME/.php/$CONFIG_VERSION"
+            mkdir -p "$USER_PHP_DIR/conf.d"
+            {
+              printf '%s\n' \
+                '; Managed by GitHub Actions deploy script. Ensures required extensions for Laravel runtime.' \
+                'extension=iconv' \
+                'extension=mbstring' \\\
+                'extension=dom'
+            } > "$USER_PHP_DIR/conf.d/99-wps-payroll.ini"
+
+            ls -d /usr/alwaysdata/php/* 2>/dev/null || true
+
+            PHP_BIN=""
+            for PREFIX in /usr/alwaysdata/php/8.3 /opt/alwaysdata/php/8.3 /usr/local/php/8.3; do
+              if [ -x "$PREFIX/bin/php" ]; then
+                echo "Configuring PHP prefix: $PREFIX"
+                export PATH="$PREFIX/bin:$PATH"
+                export LD_LIBRARY_PATH="$PREFIX/lib:${LD_LIBRARY_PATH:-}"
+
+                if [ -f "$PREFIX/etc/php-cli.ini" ]; then
+                  export PHPRC="$PREFIX/etc/php-cli.ini"
+                elif [ -f "$PREFIX/etc/php.ini" ]; then
+                  export PHPRC="$PREFIX/etc/php.ini"
+                elif [ -f "$PREFIX/lib/php.ini" ]; then
+                  export PHPRC="$PREFIX/lib/php.ini"
+                else
+                  unset PHPRC
+                fi
+
+                if [ -d "$PREFIX/etc/conf.d" ] && [ -d "$PREFIX/etc/php.d" ]; then
+                  export PHP_INI_SCAN_DIR="$PREFIX/etc/conf.d:$PREFIX/etc/php.d"
+                elif [ -d "$PREFIX/etc/conf.d" ]; then
+                  export PHP_INI_SCAN_DIR="$PREFIX/etc/conf.d"
+                elif [ -d "$PREFIX/etc/php.d" ]; then
+                  export PHP_INI_SCAN_DIR="$PREFIX/etc/php.d"
+                elif [ -d "$PREFIX/lib/conf.d" ]; then
+                  export PHP_INI_SCAN_DIR="$PREFIX/lib/conf.d"
+                else
+                  unset PHP_INI_SCAN_DIR
+                fi
+
+                LOCAL_INI_DIR="$USER_PHP_DIR/conf.d"
+                if [ -d "$LOCAL_INI_DIR" ]; then
+                  if [ -n "${PHP_INI_SCAN_DIR:-}" ]; then
+                    export PHP_INI_SCAN_DIR="$LOCAL_INI_DIR:$PHP_INI_SCAN_DIR"
+                  else
+                    export PHP_INI_SCAN_DIR="$LOCAL_INI_DIR"
+                  fi
+                fi
+
+                ls -l "$PREFIX" || true
+                ls "$PREFIX/etc" || true
+
+                PHP_BIN="$PREFIX/bin/php"
+                break
+              fi
+            done
+
+            if [ -z "$PHP_BIN" ]; then
+              for candidate in php83 php8.3 php-8.3 php; do
+                if command -v "$candidate" >/dev/null 2>&1; then
+                  PHP_BIN=$(command -v "$candidate")
+                  break
+                fi
+              done
+            fi
+
+            if [ -z "$PHP_BIN" ]; then
+              echo "Could not locate a PHP binary" >&2
+              exit 1
+            fi
+
+            echo "Using PHP binary: $PHP_BIN"
+            "$PHP_BIN" -v || true
+            echo "Loaded ini:"
+            "$PHP_BIN" -i | grep -i "^Loaded Configuration" || true
+            echo "Scan dir: ${PHP_INI_SCAN_DIR:-<none>}"
+            echo "Modules:"
+            MODULES=$("$PHP_BIN" -m)
+            printf '%s\n' "$MODULES"
+
+            EXIT_MISSING_EXT=0
+            if ! printf '%s\n' "$MODULES" | grep -qx 'iconv'; then
+              echo "::error::iconv extension missing in CLI runtime" >&2
+              EXIT_MISSING_EXT=1
+            fi
+            if ! printf '%s\n' "$MODULES" | grep -qx 'mbstring'; then
+              echo "::error::mbstring extension missing in CLI runtime" >&2
+              EXIT_MISSING_EXT=1
+            fi
+
+            if [ "$EXIT_MISSING_EXT" -eq 1 ]; then
+              echo "PHP extensions iconv/mbstring are required. Review Alwaysdata PHP configuration." >&2
+              exit 1
+            fi
+
+            run_artisan() {
+              if "$PHP_BIN" artisan "$@" 2>&1; then
+                return 0
+              fi
+
+              STATUS=$?
+              echo "artisan command failed: $* (exit $STATUS)" >&2
+              if [ -f storage/logs/laravel.log ]; then
+                echo "Last 200 lines of storage/logs/laravel.log:" >&2
+                tail -n 200 storage/logs/laravel.log >&2 || true
+              fi
+              exit $STATUS
+            }
+
+            run_artisan storage:link || true
+            run_artisan migrate --force --no-interaction
+            run_artisan optimize:clear
+            run_artisan config:cache
+            run_artisan route:cache
+
+            if [ -d "$CURRENT_LINK" ] && [ ! -L "$CURRENT_LINK" ]; then
+              rm -rf "$CURRENT_LINK"
+            fi
+            ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
+
+            TARGET_PUBLIC="$DEPLOY_DIR/public"
+            if [ -d "$TARGET_PUBLIC" ] && [ ! -L "$TARGET_PUBLIC" ]; then
+              rm -rf "$TARGET_PUBLIC"
+            fi
+            ln -sfn "$RELEASE_DIR/public" "$TARGET_PUBLIC"
+
+
+          EOF

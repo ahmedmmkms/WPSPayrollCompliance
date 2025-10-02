@@ -1,0 +1,246 @@
+:root {
+    --fi-font-family-sans: 'Inter', 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --fi-heading-weight: 700;
+    --color-brand: #6F3CC3;
+    --color-accent: #10BCE0;
+    --color-surface-100: #121A29;
+    --color-surface-200: #151E31;
+    --color-text-primary: #E6EEF8;
+    --color-text-muted: #9FB0C8;
+    --card-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+    --card-shadow-hover: 0 18px 36px rgba(0, 0, 0, 0.28);
+    --chart-grid: rgba(230, 238, 248, 0.08);
+}
+
+html[dir='rtl'] {
+    font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.fi-body {
+    background-color: var(--color-surface-100);
+    background-image: none !important;
+    color: var(--color-text-primary);
+    font-family: var(--fi-font-family-sans);
+    line-height: 1.6;
+}
+
+.fi-body .fi-layout {
+    background: transparent;
+}
+
+.fi-body .fi-topbar,
+.fi-body .fi-sidebar-header {
+    background: linear-gradient(125deg, rgba(111, 60, 195, 0.18), rgba(16, 188, 224, 0.15));
+    border-bottom: 1px solid rgba(16, 188, 224, 0.18);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(18px);
+}
+
+.fi-body .fi-sidebar {
+    background: var(--color-surface-200) !important;
+    border-inline-end: 1px solid rgba(255, 255, 255, 0.04);
+    color: var(--color-text-muted);
+}
+
+.fi-body .fi-sidebar-header {
+    padding-block: 1.25rem;
+}
+
+.fi-body .fi-sidebar-header .fi-user-menu-trigger .fi-avatar,
+.fi-body .fi-sidebar-header .fi-user-menu-trigger img {
+    width: 40px;
+    height: 40px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.fi-body .fi-sidebar-nav-groups {
+    gap: 1.5rem;
+    padding-inline: 1rem;
+}
+
+.fi-body .fi-sidebar-group-items {
+    gap: 0.5rem;
+}
+
+.fi-body .fi-sidebar-item {
+    border-radius: 0.9rem;
+    padding-block: 0.65rem;
+    transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.fi-body .fi-sidebar-item:hover,
+.fi-body .fi-sidebar-item:focus-visible {
+    background: rgba(111, 60, 195, 0.18);
+    color: var(--color-text-primary);
+    transform: translateX(2px);
+}
+
+.fi-body .fi-sidebar-item.fi-active {
+    background: linear-gradient(120deg, rgba(16, 188, 224, 0.25), rgba(111, 60, 195, 0.25));
+    color: var(--color-text-primary);
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1px rgba(16, 188, 224, 0.3);
+}
+
+.fi-body .fi-sidebar-footer {
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.fi-body .fi-sidebar-footer form,
+.fi-body .fi-sidebar-footer a {
+    width: 100%;
+}
+
+.fi-body .fi-sidebar-footer button,
+.fi-body .fi-sidebar-footer a {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: 0.8rem;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    transition: background-color 150ms ease, color 150ms ease;
+}
+
+.fi-body .fi-sidebar-footer button:hover,
+.fi-body .fi-sidebar-footer button:focus-visible,
+.fi-body .fi-sidebar-footer a:hover,
+.fi-body .fi-sidebar-footer a:focus-visible {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.fi-main {
+    padding-block: 2.5rem 3.5rem;
+    color: var(--color-text-muted);
+}
+
+.fi-main h1,
+.fi-main h2,
+.fi-main h3 {
+    color: var(--color-text-primary);
+    font-weight: var(--fi-heading-weight);
+    letter-spacing: 0.01em;
+}
+
+.fi-main .fi-simple-layout {
+    max-width: 1100px;
+    margin-inline: auto;
+    gap: 1.5rem;
+}
+
+.fi-main .fi-section,
+.fi-main .fi-card,
+.fi-main .fi-table {
+    border-radius: 1rem;
+}
+
+.fi-main .fi-section-header,
+.fi-main .fi-card,
+.fi-main .fi-stats-overview-stat {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: var(--card-shadow);
+    transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.fi-main .fi-card:hover,
+.fi-main .fi-stats-overview-stat:hover,
+.fi-main .fi-section-header:hover {
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.fi-main .fi-section {
+    margin-block: 1.25rem;
+}
+
+.fi-main .fi-section-content,
+.fi-main .fi-card-content {
+    color: var(--color-text-primary);
+}
+
+.fi-main .fi-card-header,
+.fi-main .fi-table thead {
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.fi-main table tbody tr {
+    transition: background-color 150ms ease;
+}
+
+.fi-main table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.fi-main .fi-button {
+    border-radius: 0.8rem;
+    font-weight: 600;
+}
+
+.fi-main .fi-alert {
+    border-radius: 1rem;
+}
+
+.fi-body .fi-pagination,
+.fi-body .fi-filter-indicator {
+    color: var(--color-text-muted);
+}
+
+.fi-body .fi-pagination button,
+.fi-body .fi-pagination select {
+    border-radius: 0.75rem;
+}
+
+.fi-main .prose :where(ul) {
+    list-style: disc;
+    padding-inline-start: 1.5rem;
+}
+
+.fi-main .prose :where(ol) {
+    list-style: decimal;
+    padding-inline-start: 1.5rem;
+}
+
+.fi-main .prose :where(img) {
+    border-radius: 0.75rem;
+    max-width: 100%;
+}
+
+.fi-main .prose :where(svg) {
+    height: auto;
+    width: 100%;
+}
+
+html[dir='rtl'] .fi-body .fi-sidebar {
+    border-inline-start: 1px solid rgba(255, 255, 255, 0.04);
+    border-inline-end: 0;
+}
+
+html[dir='rtl'] .fi-body .fi-sidebar-item:hover,
+html[dir='rtl'] .fi-body .fi-sidebar-item:focus-visible {
+    transform: translateX(-2px);
+}
+
+html[dir='rtl'] .fi-main {
+    text-align: right;
+}
+
+@media (max-width: 1023px) {
+    .fi-body .fi-topbar,
+    .fi-body .fi-sidebar-header {
+        margin: 0.75rem;
+        border-radius: 1.25rem;
+    }
+
+    .fi-body .fi-sidebar {
+        border-radius: 1.5rem;
+    }
+}

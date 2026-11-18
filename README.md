@@ -1,10 +1,29 @@
 # WPS Payroll Compliance
 
-Automate Wage Protection System (WPS) submissions, spot payroll anomalies before they reach regulators, and deliver dashboards that operations teams genuinely enjoy using. WPS Payroll Compliance keeps everything deployable on a free-tier stack while staying bilingual and multi-tenant from day one.
+An independent MVP that validates payroll data against Wage Protection System (WPS) rules, surfaces anomalies before a file reaches the bank, and tracks exceptions to resolution. It is bilingual, multi-tenant from day one, and runs on a free-tier stack.
 
-## Why Teams Choose It
+## Product Brief
+
+_Status: independent MVP with a live demo. Not yet used by real customers; the problem and metrics below are assumptions a pilot would test._
+
+**Problem.** Companies in the UAE and Saudi Arabia must pay salaries through the Wage Protection System and submit bank-ready files. Payroll teams often check employee data by hand in spreadsheets, so errors surface only when a file is rejected and salaries are delayed.
+
+**Who it's for.** Payroll managers and operations teams, including providers that run payroll for several companies.
+
+**Key decisions and trade-offs**
+- **Validate before submission.** Imports show a preview and flag exceptions, so errors get fixed before the bank sees the file.
+- **Rules encoded once and reused across tenants,** so a regulation change is made in one place.
+- **Multi-tenant from day one,** because payroll providers serve many companies. Trade-off: more complexity in the first release.
+- **Exceptions as a tracked workspace** with owners, SLA counters and audit trails, not just an error list.
+- **Free-tier hosting** keeps MVP cost near zero, at the price of limited throughput.
+
+**Deliberately out of scope:** calculating salaries. The product validates payroll data and prepares files; it doesn't compute pay.
+
+**What a pilot would measure:** first-time-right submission rate, exceptions per batch and time to resolve them, and time from import to a bank-ready file.
+
+## What It Does
 - **Compliance without chaos** – Encode Mudad and SIF rules once, reuse them for every tenant, and prove adherence with traceable audit data.
-- **Tenant isolation by default** – Stancl Tenancy segregates payroll data and KPIs so enterprise customers stay within their regulatory boundaries.
+- **Tenant isolation by default** – Stancl Tenancy segregates payroll data and KPIs so each company's data stays inside its own tenant.
 - **Bilingual UX + PWA** – Arabic and English experiences with RTL layouts, offline support, and install prompts in a single codebase.
 - **Free-tier friendly** – Runs on Alwaysdata + Neon + Upstash with automated GitHub Actions deploys and zero containers to babysit.
 - **Observable operations** – Filament dashboards, KPI APIs, and queue baselines keep payroll runs predictable during month-end spikes.
@@ -103,7 +122,7 @@ graph LR
 - Update the Alwaysdata site root to `~/www/wps-payroll/current/public` so Apache follows the active symlink.
 
 ## Author & Links
-- Authored by **AMM**.
+- Built by **Ahmed Mahmoud Moustafa**, technical product manager and systems engineer, as part of an independent product portfolio: [github.com/ahmedmmkms](https://github.com/ahmedmmkms).
 - Connect on LinkedIn: [![Ahmed Mahmoud](https://img.shields.io/badge/LinkedIn-Ahmed%20Mahmoud-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/ahmedmmkms/)
 
 ## License
